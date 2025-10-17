@@ -1,12 +1,19 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, Maximize2, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Calendar, ChevronLeft, ChevronRight, Clock, DollarSign } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
-import { Card } from '@/components/ui/card';
-import type { CampaignWindow } from '@/types/window';
+import { Card, CardContent } from '@/components/ui/card';
+import type { CampaignWindow, WindowRow } from '@/types/window';
+
+interface TooltipData {
+  window: WindowRow;
+  campaignName: string;
+  mouseX: number;
+  mouseY: number;
+}
 
 interface WindowTimelineChartProps {
   data: CampaignWindow[];
@@ -19,6 +26,7 @@ export default function WindowTimelineChart({
 }: WindowTimelineChartProps) {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [xAxisRange, setXAxisRange] = useState<[number, number]>([0, 100]);
+  const [tooltipData, setTooltipData] = useState<TooltipData | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const sortedData = useMemo(() => {
@@ -130,6 +138,24 @@ export default function WindowTimelineChart({
   };
 
   const timeMarkers = generateTimeMarkers();
+
+  const handleWindowMouseEnter = useCallback((
+    event: React.MouseEvent<SVGRectElement>,
+    window: WindowRow,
+    campaignName: string
+  ) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setTooltipData({
+      window,
+      campaignName,
+      mouseX: rect.left + rect.width / 2,
+      mouseY: rect.top,
+    });
+  }, []);
+
+  const handleWindowMouseLeave = useCallback(() => {
+    setTooltipData(null);
+  }, []);
 
   if (data.length === 0) {
     return (
@@ -392,14 +418,9 @@ export default function WindowTimelineChart({
                         style={{
                           transition: 'all 0.2s ease-in-out',
                         }}
-                      >
-                        <title>
-                          {`${campaignName}\n` +
-                            `Start: ${format(window.start_time, 'PPp')}\n` +
-                            `End: ${format(window.end_time, 'PPp')}\n` +
-                            `Duration: ${window.window_duration_minutes.toFixed(1)} min`}
-                        </title>
-                      </rect>
+                        onMouseEnter={(e) => handleWindowMouseEnter(e, window, campaignName)}
+                        onMouseLeave={handleWindowMouseLeave}
+                      />
                     </g>
                   );
                 })}
@@ -442,6 +463,69 @@ export default function WindowTimelineChart({
           <p className="text-2xl font-bold text-foreground">{sortedData.length}</p>
         </Card>
       </div>
+
+      {tooltipData && (
+        <div
+          className="fixed z-50 pointer-events-none"
+          style={{
+            left: `${tooltipData.mouseX}px`,
+            top: `${tooltipData.mouseY - 10}px`,
+            transform: 'translate(-50%, -100%)',
+          }}
+        >
+          <Card className="shadow-2xl border-2 border-purple-500/50 bg-card/95 backdrop-blur-sm animate-fade-in">
+            <CardContent className="p-4 space-y-3">
+              <div className="space-y-1">
+                <h4 className="font-semibold text-sm text-foreground">
+                  {tooltipData.campaignName}
+                </h4>
+                <p className="text-xs text-muted-foreground">
+                  Campaign ID: {tooltipData.window.campaign_id}
+                </p>
+              </div>
+
+              <div className="flex items-start gap-2 text-xs">
+                <Clock className="h-3.5 w-3.5 text-purple-500 mt-0.5 flex-shrink-0" />
+                <div className="space-y-1">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-muted-foreground font-medium">Start:</span>
+                    <span className="text-foreground font-mono">
+                      {format(tooltipData.window.start_time, 'PPp')}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-muted-foreground font-medium">End:</span>
+                    <span className="text-foreground font-mono">
+                      {format(tooltipData.window.end_time, 'PPp')}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-1.5 pt-1 border-t border-border/50">
+                    <span className="text-muted-foreground font-medium">Duration:</span>
+                    <span className="text-purple-600 dark:text-purple-400 font-semibold">
+                      {tooltipData.window.window_duration_minutes.toFixed(1)} minutes
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {tooltipData.window.total_spend !== undefined && (
+                <div className="flex items-center gap-2 text-xs pt-2 border-t border-border/50">
+                  <DollarSign className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-muted-foreground font-medium">Total Spend:</span>
+                    <span className="text-foreground font-semibold">
+                      ${tooltipData.window.total_spend.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                      })}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
