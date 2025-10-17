@@ -120,18 +120,60 @@ export default function WindowTimelineChart({
   };
 
   const generateTimeMarkers = () => {
-    const markers: Array<{ time: Date; x: number; label: string }> = [];
-    const markerCount = 10;
-    const step = timeRange / markerCount;
+    const markers: Array<{ time: Date; x: number; label: string; type: 'day' | 'hour' }> = [];
+    const timeRangeDays = timeRange / (1000 * 60 * 60 * 24);
 
-    for (let i = 0; i <= markerCount; i++) {
-      const time = new Date(minTime + step * i);
-      const x = timeToX(time);
-      markers.push({
-        time,
-        x,
-        label: format(time, 'MMM dd HH:mm'),
-      });
+    // Determine if we should show hourly markers based on zoom level
+    const showHourly = timeRangeDays < 7; // Show hourly when viewing less than 7 days
+
+    if (showHourly) {
+      // Hourly markers
+      const startHour = new Date(minTime);
+      startHour.setMinutes(0, 0, 0);
+
+      let currentTime = startHour.getTime();
+      while (currentTime <= maxTime) {
+        const time = new Date(currentTime);
+        const x = timeToX(time);
+        const hour = time.getHours();
+
+        // Mark midnight as a day marker
+        if (hour === 0) {
+          markers.push({
+            time,
+            x,
+            label: format(time, 'MMM dd'),
+            type: 'day',
+          });
+        } else {
+          markers.push({
+            time,
+            x,
+            label: format(time, 'HH:mm'),
+            type: 'hour',
+          });
+        }
+
+        currentTime += 60 * 60 * 1000; // Add 1 hour
+      }
+    } else {
+      // Daily markers only
+      const startDay = new Date(minTime);
+      startDay.setHours(0, 0, 0, 0);
+
+      let currentTime = startDay.getTime();
+      while (currentTime <= maxTime) {
+        const time = new Date(currentTime);
+        const x = timeToX(time);
+        markers.push({
+          time,
+          x,
+          label: format(time, 'MMM dd'),
+          type: 'day',
+        });
+
+        currentTime += 24 * 60 * 60 * 1000; // Add 1 day
+      }
     }
 
     return markers;
@@ -166,7 +208,32 @@ export default function WindowTimelineChart({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+        <Card className="p-2 bg-gradient-to-br from-violet-500/10 to-purple-500/10 border-violet-200 dark:border-violet-800 text-center">
+          <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Total Windows</p>
+          <p className="text-base font-bold text-foreground">
+            {sortedData.reduce((sum, c) => sum + c.totalWindows, 0).toLocaleString()}
+          </p>
+        </Card>
+        <Card className="p-2 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-200 dark:border-blue-800 text-center">
+          <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Total Duration</p>
+          <p className="text-base font-bold text-foreground">
+            {(sortedData.reduce((sum, c) => sum + c.totalDuration, 0) / 60).toFixed(1)} hrs
+          </p>
+        </Card>
+        <Card className="p-2 bg-gradient-to-br from-emerald-500/10 to-green-500/10 border-emerald-200 dark:border-emerald-800 text-center">
+          <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Avg Windows/Campaign</p>
+          <p className="text-base font-bold text-foreground">
+            {(sortedData.reduce((sum, c) => sum + c.totalWindows, 0) / sortedData.length).toFixed(1)}
+          </p>
+        </Card>
+        <Card className="p-2 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-200 dark:border-amber-800 text-center">
+          <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Active Campaigns</p>
+          <p className="text-base font-bold text-foreground">{sortedData.length}</p>
+        </Card>
+      </div>
+
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -333,29 +400,32 @@ export default function WindowTimelineChart({
             fill="url(#grid)"
           />
 
-          {timeMarkers.map((marker, i) => (
-            <g key={i}>
-              <line
-                x1={marker.x}
-                y1={topPadding}
-                x2={marker.x}
-                y2={chartHeight - bottomPadding}
-                stroke="hsl(var(--muted-foreground))"
-                strokeWidth="1.5"
-                strokeDasharray="4 4"
-                opacity="0.5"
-              />
-              <text
-                x={marker.x}
-                y={topPadding - 10}
-                textAnchor="middle"
-                className="fill-muted-foreground font-medium"
-                style={{ fontSize: '10px' }}
-              >
-                {marker.label}
-              </text>
-            </g>
-          ))}
+          {timeMarkers.map((marker, i) => {
+            const isDayMarker = marker.type === 'day';
+            return (
+              <g key={i}>
+                <line
+                  x1={marker.x}
+                  y1={topPadding}
+                  x2={marker.x}
+                  y2={chartHeight - bottomPadding}
+                  stroke={isDayMarker ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))'}
+                  strokeWidth={isDayMarker ? '2' : '1'}
+                  strokeDasharray={isDayMarker ? undefined : '3 3'}
+                  opacity={isDayMarker ? '0.6' : '0.3'}
+                />
+                <text
+                  x={marker.x}
+                  y={topPadding - 10}
+                  textAnchor="middle"
+                  className={isDayMarker ? 'fill-primary font-semibold' : 'fill-muted-foreground'}
+                  style={{ fontSize: isDayMarker ? '11px' : '9px' }}
+                >
+                  {marker.label}
+                </text>
+              </g>
+            );
+          })}
 
           {sortedData.map((campaign, index) => {
             const y = topPadding + index * (rowHeight + rowGap);
@@ -463,31 +533,6 @@ export default function WindowTimelineChart({
             strokeWidth="2"
           />
         </svg>
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4 bg-gradient-to-br from-violet-500/10 to-purple-500/10 border-violet-200 dark:border-violet-800 text-center">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Total Windows</p>
-          <p className="text-2xl font-bold text-foreground">
-            {sortedData.reduce((sum, c) => sum + c.totalWindows, 0).toLocaleString()}
-          </p>
-        </Card>
-        <Card className="p-4 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-200 dark:border-blue-800 text-center">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Total Duration</p>
-          <p className="text-2xl font-bold text-foreground">
-            {(sortedData.reduce((sum, c) => sum + c.totalDuration, 0) / 60).toFixed(1)} hrs
-          </p>
-        </Card>
-        <Card className="p-4 bg-gradient-to-br from-emerald-500/10 to-green-500/10 border-emerald-200 dark:border-emerald-800 text-center">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Avg Windows/Campaign</p>
-          <p className="text-2xl font-bold text-foreground">
-            {(sortedData.reduce((sum, c) => sum + c.totalWindows, 0) / sortedData.length).toFixed(1)}
-          </p>
-        </Card>
-        <Card className="p-4 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-200 dark:border-amber-800 text-center">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Active Campaigns</p>
-          <p className="text-2xl font-bold text-foreground">{sortedData.length}</p>
-        </Card>
       </div>
 
       {tooltipData && (

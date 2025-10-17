@@ -115,7 +115,7 @@ export default function SpikeCountChart({ data, height = 350, featureDate, showW
           <YAxis
             yAxisId="right"
             orientation="right"
-            label={{ value: 'Time Active (min) / Depletion Rate (%)', angle: 90, position: 'center', offset: 10 }}
+            label={{ value: 'Depletion Rate (%)', angle: 0, position: 'top', offset: 20 }}
           />
         )}
 
