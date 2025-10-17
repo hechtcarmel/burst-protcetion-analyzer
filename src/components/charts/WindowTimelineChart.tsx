@@ -285,8 +285,8 @@ export default function WindowTimelineChart({
 
       <div
         ref={scrollRef}
-        className="relative border-2 rounded-xl bg-gradient-to-br from-background to-muted/20 overflow-auto shadow-lg"
-        style={{ height }}
+        className="relative border-2 rounded-xl bg-gradient-to-br from-background to-muted/20 overflow-auto shadow-lg px-4 py-4"
+        style={{ maxHeight: height }}
       >
         <svg
           width={Math.max(chartWidth, 800)}
@@ -341,9 +341,9 @@ export default function WindowTimelineChart({
                 x2={marker.x}
                 y2={chartHeight - bottomPadding}
                 stroke="hsl(var(--muted-foreground))"
-                strokeWidth="1"
+                strokeWidth="1.5"
                 strokeDasharray="4 4"
-                opacity="0.4"
+                opacity="0.5"
               />
               <text
                 x={marker.x}
@@ -359,10 +359,36 @@ export default function WindowTimelineChart({
 
           {sortedData.map((campaign, index) => {
             const y = topPadding + index * (rowHeight + rowGap);
+            return (
+              <line
+                key={`separator-${campaign.campaign_id}`}
+                x1={leftLabelWidth}
+                y1={y + rowHeight}
+                x2={chartWidth - rightPadding}
+                y2={y + rowHeight}
+                stroke="hsl(var(--border))"
+                strokeWidth="1"
+                opacity="0.3"
+              />
+            );
+          })}
+
+          {sortedData.map((campaign, index) => {
+            const y = topPadding + index * (rowHeight + rowGap);
             const campaignName = campaign.campaign_name || `Campaign ${campaign.campaign_id}`;
+            const isEven = index % 2 === 0;
 
             return (
               <g key={campaign.campaign_id}>
+                <rect
+                  x={leftLabelWidth}
+                  y={y}
+                  width={chartWidth - leftLabelWidth - rightPadding}
+                  height={rowHeight}
+                  fill="hsl(var(--muted))"
+                  fillOpacity={isEven ? "0.15" : "0.05"}
+                />
+
                 <rect
                   x={0}
                   y={y}
@@ -440,25 +466,25 @@ export default function WindowTimelineChart({
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4 bg-gradient-to-br from-violet-500/10 to-purple-500/10 border-violet-200 dark:border-violet-800">
+        <Card className="p-4 bg-gradient-to-br from-violet-500/10 to-purple-500/10 border-violet-200 dark:border-violet-800 text-center">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Total Windows</p>
           <p className="text-2xl font-bold text-foreground">
             {sortedData.reduce((sum, c) => sum + c.totalWindows, 0).toLocaleString()}
           </p>
         </Card>
-        <Card className="p-4 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-200 dark:border-blue-800">
+        <Card className="p-4 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-200 dark:border-blue-800 text-center">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Total Duration</p>
           <p className="text-2xl font-bold text-foreground">
             {(sortedData.reduce((sum, c) => sum + c.totalDuration, 0) / 60).toFixed(1)} hrs
           </p>
         </Card>
-        <Card className="p-4 bg-gradient-to-br from-emerald-500/10 to-green-500/10 border-emerald-200 dark:border-emerald-800">
+        <Card className="p-4 bg-gradient-to-br from-emerald-500/10 to-green-500/10 border-emerald-200 dark:border-emerald-800 text-center">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Avg Windows/Campaign</p>
           <p className="text-2xl font-bold text-foreground">
             {(sortedData.reduce((sum, c) => sum + c.totalWindows, 0) / sortedData.length).toFixed(1)}
           </p>
         </Card>
-        <Card className="p-4 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-200 dark:border-amber-800">
+        <Card className="p-4 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-200 dark:border-amber-800 text-center">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Active Campaigns</p>
           <p className="text-2xl font-bold text-foreground">{sortedData.length}</p>
         </Card>
