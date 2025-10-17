@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Enable BuildKit for better build performance
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    image: burst-protection-analysis:latest
+    container_name: burst-protection-app
+    ports:
+      - "3000:3000"
+    environment:
+      # Application settings
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+
+      # Vertica database connection
+      # These will be overridden by .env file if present
+      - VERTICA_HOST=${VERTICA_HOST:-office-vrt.taboolasyndication.com}
+      - VERTICA_PORT=${VERTICA_PORT:-5433}
+      - VERTICA_DATABASE=${VERTICA_DATABASE:-taboola_prod}
+      - VERTICA_USER=${VERTICA_USER}
+      - VERTICA_PASSWORD=${VERTICA_PASSWORD}
+      - VERTICA_CONNECTION_TIMEOUT=${VERTICA_CONNECTION_TIMEOUT:-10000}
+
+      # Optional: Custom connection feature
+      - ENABLE_CUSTOM_CONNECTION=${ENABLE_CUSTOM_CONNECTION:-true}
+
+    # Use env_file to load from .env.local or .env.docker
+    env_file:
+      - .env.local
+
+    restart: unless-stopped
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/test-db', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Resource limits (adjust based on your needs)
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
