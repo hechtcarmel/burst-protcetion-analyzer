@@ -4,18 +4,42 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { getDepletionRateLabel, getDepletionRateStatus } from '@/lib/utils/color';
+import { z } from 'zod';
+
+const ChartDataSchema = z.object({
+  date: z.union([z.string(), z.number(), z.date()]).optional(),
+  avgDepletionRate: z.number().optional(),
+  macAvg: z.number().optional(),
+  windowDurationDisplay: z.string().optional(),
+});
+
+type ChartData = z.infer<typeof ChartDataSchema>;
+
+interface TooltipPayloadEntry {
+  name: string;
+  value: number;
+  color: string;
+  dataKey: string;
+  payload: ChartData;
+}
 
 interface ChartTooltipProps {
   active?: boolean;
-  payload?: any[];
+  payload?: TooltipPayloadEntry[];
   label?: string;
   date?: Date;
 }
 
-export function ChartTooltip({ active, payload, label, date }: ChartTooltipProps) {
+function parseChartData(data: unknown): ChartData {
+  const result = ChartDataSchema.safeParse(data);
+  return result.success ? result.data : {};
+}
+
+export function ChartTooltip({ active, payload, date }: ChartTooltipProps) {
   if (!active || !payload?.length) return null;
 
-  const data = payload[0].payload;
+  const rawData = payload[0].payload;
+  const data = parseChartData(rawData);
   const displayDate = date || (data.date ? new Date(data.date) : null);
 
   return (
@@ -28,7 +52,7 @@ export function ChartTooltip({ active, payload, label, date }: ChartTooltipProps
         )}
 
         <div className="space-y-1.5">
-          {payload.map((entry: any) => {
+          {payload.map((entry: TooltipPayloadEntry) => {
             const value = entry.value;
             const isPercentage = entry.name?.includes('Rate') || entry.name?.includes('%');
             const displayValue = isPercentage ? `${value.toFixed(2)}%` : value.toLocaleString();
@@ -75,21 +99,22 @@ export function ChartTooltip({ active, payload, label, date }: ChartTooltipProps
 
 interface DepletionTooltipProps {
   active?: boolean;
-  payload?: any[];
+  payload?: TooltipPayloadEntry[];
 }
 
 export function DepletionTooltip({ active, payload }: DepletionTooltipProps) {
   if (!active || !payload?.length) return null;
 
-  const data = payload[0].payload;
-  const depletionRate = data.avgDepletionRate || 0;
-  const macAvg = data.macAvg || 0;
+  const rawData = payload[0].payload;
+  const data = parseChartData(rawData);
+  const depletionRate = data.avgDepletionRate ?? 0;
+  const macAvg = data.macAvg ?? 0;
 
   return (
     <Card className="p-4 shadow-xl border-2 bg-card/95 backdrop-blur-sm min-w-[280px]">
       <div className="space-y-3">
         <p className="font-semibold border-b pb-2">
-          {format(new Date(data.date), 'PPP')}
+          {format(new Date(data.date as string | number | Date), 'PPP')}
         </p>
 
         <div className="grid grid-cols-2 gap-4">

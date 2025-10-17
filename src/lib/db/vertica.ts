@@ -70,13 +70,13 @@ class VerticaConnectionPool {
               timeout: 60000,
             };
 
-            const client = vertica.connect(connSettings, (err: Error) => {
+            vertica.connect(connSettings, (err: Error | null, connection: VerticaClient) => {
               if (err) {
                 console.error("Vertica connection error:", err);
                 reject(err);
               } else {
                 console.log("Vertica connection created in pool");
-                resolve(client);
+                resolve(connection);
               }
             });
           });
