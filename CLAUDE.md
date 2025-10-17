@@ -10,10 +10,36 @@ This is a **Next.js 15 full-stack analytics dashboard** that analyzes advertisin
 - Frontend: Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS v4
 - Backend: Next.js API Routes (Node.js runtime)
 - Database: Vertica (via custom connection pool with `generic-pool`)
-- State Management: TanStack Query for server state
+- State Management: TanStack Query for server state + URL-based filter state
 - UI Components: Radix UI primitives (shadcn/ui pattern)
+- Animations: Framer Motion + CSS transitions
 - Validation: Zod schemas
 - Package Manager: **pnpm** (always use pnpm, never npm or yarn)
+
+## Quick Start for Developers
+
+### Setup Script
+Use the automated setup script for quickest onboarding:
+```bash
+./setup.sh
+```
+
+This handles: Node.js check, pnpm installation, dependencies, Vertica configuration, build, and run.
+
+### Manual Setup
+```bash
+# Install dependencies
+pnpm install
+
+# Configure Vertica credentials
+cp .env.docker.example .env.local
+# Edit .env.local with your credentials
+
+# Run development server
+pnpm dev
+
+# Open http://localhost:3000
+```
 
 ## Development Commands
 
@@ -224,3 +250,71 @@ Main table columns:
 - `blocking_status` - 'BLOCKED' | 'NOT BLOCKED'
 
 The application supports hierarchical filtering: Advertiser → Campaign
+
+## Project Documentation
+
+Comprehensive documentation available:
+- **[README.md](./README.md)** - Quick start, setup, and usage guide
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Detailed technical architecture
+- **[electronPlan.md](./electronPlan.md)** - Electron desktop app migration plan
+- **[uiPlan.md](./uiPlan.md)** - UI/UX enhancement roadmap
+- **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** - Recent improvements
+
+## Setup Script
+
+The automated setup script (`./setup.sh`) provides:
+- Node.js version check (v20+ required)
+- Automatic pnpm installation
+- Dependency installation
+- Interactive Vertica credential configuration
+- Database connection testing
+- Build and run options
+
+**Usage:**
+```bash
+./setup.sh                  # Full setup
+./setup.sh --config-only    # Only configure .env.local
+./setup.sh --test-connection # Test existing config
+./setup.sh --help           # Show options
+```
+
+## Key Files to Know
+
+### Database Layer
+- `src/lib/db/vertica.ts` - Connection pool (singleton, HMR-aware)
+- `src/lib/db/queries.ts` - SQL query builders
+- `src/lib/db/schema.ts` - Zod validation schemas
+- `src/lib/db/types.ts` - TypeScript types
+
+### API Routes
+- `src/app/api/burst-protection/route.ts` - Main data endpoint
+- `src/app/api/burst-protection/metrics/route.ts` - Aggregated metrics
+- `src/app/api/test-db/route.ts` - Health check
+- `src/app/api/pool-stats/route.ts` - Pool monitoring
+
+### Frontend Components
+- `src/app/page.tsx` - Main dashboard page (Server Component)
+- `src/components/dashboard/DashboardLayout.tsx` - Layout wrapper
+- `src/components/dashboard/MetricsCards.tsx` - KPI cards
+- `src/components/charts/` - Recharts visualizations
+- `src/lib/hooks/useFilters.ts` - URL state management
+
+### Styling & Design
+- `src/app/globals.css` - Global styles + design system
+- `src/lib/design-tokens.ts` - Design tokens (spacing, colors, gradients)
+- `src/lib/utils/color.ts` - Chart color utilities
+- `src/components/ui/` - Radix UI primitives (shadcn/ui)
+
+## Testing Checklist
+
+When making changes:
+- [ ] Test with various filter combinations
+- [ ] Verify URL state updates correctly
+- [ ] Check cache behavior (hit/miss)
+- [ ] Monitor connection pool stats
+- [ ] Test error handling (network failures)
+- [ ] Verify animations and transitions
+- [ ] Check mobile responsiveness
+- [ ] Test with no data / edge cases
+- [ ] Validate Zod schemas catch bad data
+- [ ] Run `pnpm build` to ensure production build works
