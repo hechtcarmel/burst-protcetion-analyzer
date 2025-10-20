@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, Maximize2, Calendar, ChevronLeft, ChevronRight, Clock, DollarSign } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Calendar, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Card, CardContent } from '@/components/ui/card';
 import type { CampaignWindow, WindowRow } from '@/types/window';
@@ -578,21 +578,6 @@ export default function WindowTimelineChart({
                   </div>
                 </div>
               </div>
-
-              {tooltipData.window.total_spend !== undefined && (
-                <div className="flex items-center gap-2 text-xs pt-2 border-t border-border/50">
-                  <DollarSign className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-muted-foreground font-medium">Total Spend:</span>
-                    <span className="text-foreground font-semibold">
-                      ${tooltipData.window.total_spend.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                      })}
-                    </span>
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
