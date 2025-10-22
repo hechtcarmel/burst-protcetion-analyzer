@@ -1,6 +1,6 @@
-import type { WindowRow } from '@/types/window';
+import type { CSVWindowRow } from '@/types/window';
 
-export function parseWindowCSV(csvContent: string): WindowRow[] {
+export function parseWindowCSV(csvContent: string): CSVWindowRow[] {
   const lines = csvContent.trim().split('\n');
 
   if (lines.length < 2) {
@@ -27,7 +27,7 @@ export function parseWindowCSV(csvContent: string): WindowRow[] {
   const avgCurrentIdx = header.indexOf('avg_current_period_spend');
   const durationIdx = header.indexOf('window_duration_minutes');
 
-  const rows: WindowRow[] = [];
+  const rows: CSVWindowRow[] = [];
 
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -49,7 +49,8 @@ export function parseWindowCSV(csvContent: string): WindowRow[] {
       const durationMs = endTime.getTime() - startTime.getTime();
       const calculatedDuration = durationMs / (1000 * 60);
 
-      const row: WindowRow = {
+      const row: CSVWindowRow = {
+        source: 'csv' as const,
         campaign_id: parseInt(values[campaignIdIdx], 10),
         start_time: startTime,
         end_time: endTime,

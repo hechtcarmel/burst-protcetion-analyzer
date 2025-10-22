@@ -291,3 +291,91 @@ export async function getCampaignsList(filters?: {
   }));
 }
 
+export async function getBlockingWindows(filters?: {
+  advertiserId?: number;
+  campaignId?: number;
+  startDate?: string;
+  endDate?: string;
+}): Promise<Array<{
+  syndicator_id: number;
+  campaign_id: number;
+  start_time: Date;
+  end_time: Date;
+  avg_expected_hourly_spend: number | null;
+  avg_current_period_spend: number | null;
+  data_timestamp: Date;
+  window_duration_minutes: number;
+}>> {
+  const startTime = Date.now();
+
+  const advertiserCondition = filters?.advertiserId
+    ? `AND ${buildFilterCondition('syndicator_id', filters.advertiserId)}`
+    : '';
+
+  const campaignCondition = filters?.campaignId
+    ? `AND ${buildFilterCondition('campaign_id', filters.campaignId)}`
+    : '';
+
+  // Filter on actual window times - both start_time and end_time should be within the date range
+  const dateCondition = filters?.startDate && filters?.endDate
+    ? `AND ${buildDateRangeCondition('start_time', filters.startDate, filters.endDate)} AND ${buildDateRangeCondition('end_time', filters.startDate, filters.endDate)}`
+    : '';
+
+  const query = `
+    SELECT
+      syndicator_id,
+      campaign_id,
+      start_time,
+      end_time,
+      avg_expected_hourly_spend,
+      avg_current_period_spend,
+      data_timestamp
+    FROM rawdata.spending_burst_protection_hourly_blocking_windows
+    WHERE 1=1
+      ${advertiserCondition}
+      ${campaignCondition}
+      ${dateCondition}
+    ORDER BY campaign_id, start_time
+  `;
+
+  console.log('Executing blocking windows query with filters:', {
+    advertiserId: filters?.advertiserId,
+    campaignId: filters?.campaignId,
+    dateRange: filters?.startDate && filters?.endDate
+      ? `${filters.startDate} to ${filters.endDate}`
+      : 'all dates',
+  });
+
+  const rawData = await executeQuery<{
+    syndicator_id: number | string;
+    campaign_id: number | string;
+    start_time: string | Date;
+    end_time: string | Date;
+    avg_expected_hourly_spend: number | string | null;
+    avg_current_period_spend: number | string | null;
+    data_timestamp: string | Date;
+  }>(query);
+
+  const queryTime = Date.now() - startTime;
+  console.log(`Blocking windows query completed in ${queryTime}ms, returned ${rawData.length} windows`);
+
+  // Transform and calculate duration
+  return rawData.map(row => {
+    const startTime = new Date(row.start_time);
+    const endTime = new Date(row.end_time);
+    const durationMs = endTime.getTime() - startTime.getTime();
+    const window_duration_minutes = durationMs / (1000 * 60);
+
+    return {
+      syndicator_id: Number(row.syndicator_id),
+      campaign_id: Number(row.campaign_id),
+      start_time: startTime,
+      end_time: endTime,
+      avg_expected_hourly_spend: row.avg_expected_hourly_spend !== null ? Number(row.avg_expected_hourly_spend) : null,
+      avg_current_period_spend: row.avg_current_period_spend !== null ? Number(row.avg_current_period_spend) : null,
+      data_timestamp: new Date(row.data_timestamp),
+      window_duration_minutes,
+    };
+  });
+}
+

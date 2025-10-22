@@ -3,7 +3,6 @@
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
-import WindowUpload from './WindowUpload';
 import type { DateRange } from '@/types/filters';
 
 interface DashboardHeaderProps {
@@ -31,21 +30,15 @@ export default function DashboardHeader({
         </p>
       </div>
 
-      <div className="flex items-center gap-4">
-        <p className="text-sm text-muted-foreground">
-          Last updated: {format(new Date(), 'HH:mm:ss')}
-        </p>
-        <WindowUpload />
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onRefresh}
-          disabled={loading}
-        >
-          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onRefresh}
+        disabled={loading}
+      >
+        <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        Refresh
+      </Button>
     </div>
   );
 }

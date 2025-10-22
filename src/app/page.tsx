@@ -1,12 +1,14 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/query-client';
 import { useFilters } from '@/lib/hooks/useFilters';
 import { useMetrics } from '@/lib/hooks/useMetrics';
 import { useBurstProtectionData } from '@/lib/hooks/useBurstProtectionData';
 import { useCampaigns } from '@/lib/hooks/useCampaigns';
+import { useWindowsFromVertica } from '@/lib/hooks/useWindowsFromVertica';
+import { useWindows } from '@/lib/contexts/WindowContext';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import MetricsCards from '@/components/dashboard/MetricsCards';
 import ChartTabs from '@/components/dashboard/ChartTabs';
@@ -45,6 +47,36 @@ function DashboardContent() {
     startDate: filters.dateRange.start,
     endDate: filters.dateRange.end,
   });
+
+  // Fetch windows from Vertica (non-blocking, async)
+  const {
+    loadFromDatabase,
+    setDatabaseLoading,
+    setDatabaseError,
+  } = useWindows();
+
+  const {
+    data: verticaWindows,
+    isLoading: windowsLoading,
+    isError: windowsError,
+    error: windowsErrorObj,
+  } = useWindowsFromVertica({
+    advertiserId: filters.advertiserId,
+    campaignId: filters.campaignId ?? undefined,
+    startDate: filters.dateRange.start.toISOString().split('T')[0],
+    endDate: filters.dateRange.end.toISOString().split('T')[0],
+  });
+
+  // Update windows context when Vertica data arrives
+  useEffect(() => {
+    if (windowsLoading) {
+      setDatabaseLoading();
+    } else if (windowsError && windowsErrorObj) {
+      setDatabaseError(windowsErrorObj.message);
+    } else if (verticaWindows) {
+      loadFromDatabase(verticaWindows);
+    }
+  }, [windowsLoading, windowsError, windowsErrorObj, verticaWindows, loadFromDatabase, setDatabaseLoading, setDatabaseError]);
 
   const isLoading = dataLoading || metricsLoading;
   const error = dataError || metricsError;

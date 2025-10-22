@@ -50,3 +50,24 @@ export const DateRangeSchema = z.object({
   min_date: z.coerce.date(),
   max_date: z.coerce.date(),
 });
+
+// Windows API request schema
+export const WindowsFilterSchema = z.object({
+  advertiserId: z.number().int().positive().optional(),
+  campaignId: z.number().int().positive().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+});
+
+// Vertica window row schema (raw data from database)
+export const VerticaWindowRowSchema = z.object({
+  syndicator_id: z.number().int().positive(),
+  campaign_id: z.number().int().positive(),
+  start_time: z.coerce.date(),
+  end_time: z.coerce.date(),
+  avg_expected_hourly_spend: z.number().nullable(),
+  avg_current_period_spend: z.number().nullable(),
+  data_timestamp: z.coerce.date(),
+});
+
+export const VerticaWindowDataSchema = z.array(VerticaWindowRowSchema);

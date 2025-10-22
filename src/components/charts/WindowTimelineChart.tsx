@@ -39,8 +39,13 @@ export default function WindowTimelineChart({
 
     data.forEach(campaign => {
       campaign.windows.forEach(window => {
-        const startTime = window.start_time.getTime();
-        const endTime = window.end_time.getTime();
+        // Ensure dates are Date objects
+        const startTime = window.start_time instanceof Date
+          ? window.start_time.getTime()
+          : new Date(window.start_time).getTime();
+        const endTime = window.end_time instanceof Date
+          ? window.end_time.getTime()
+          : new Date(window.end_time).getTime();
         if (startTime < min) min = startTime;
         if (endTime > max) max = endTime;
       });
@@ -494,8 +499,16 @@ export default function WindowTimelineChart({
                 </text>
 
                 {campaign.windows.map((window, windowIndex) => {
-                  const startX = timeToX(window.start_time);
-                  const endX = timeToX(window.end_time);
+                  // Ensure dates are Date objects
+                  const startTime = window.start_time instanceof Date
+                    ? window.start_time
+                    : new Date(window.start_time);
+                  const endTime = window.end_time instanceof Date
+                    ? window.end_time
+                    : new Date(window.end_time);
+
+                  const startX = timeToX(startTime);
+                  const endX = timeToX(endTime);
                   const width = Math.max(endX - startX, 3);
 
                   return (
@@ -561,13 +574,23 @@ export default function WindowTimelineChart({
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-muted-foreground font-medium">Start:</span>
                     <span className="text-foreground font-mono">
-                      {format(tooltipData.window.start_time, 'PPp')}
+                      {format(
+                        tooltipData.window.start_time instanceof Date
+                          ? tooltipData.window.start_time
+                          : new Date(tooltipData.window.start_time),
+                        'PPp'
+                      )}
                     </span>
                   </div>
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-muted-foreground font-medium">End:</span>
                     <span className="text-foreground font-mono">
-                      {format(tooltipData.window.end_time, 'PPp')}
+                      {format(
+                        tooltipData.window.end_time instanceof Date
+                          ? tooltipData.window.end_time
+                          : new Date(tooltipData.window.end_time),
+                        'PPp'
+                      )}
                     </span>
                   </div>
                   <div className="flex items-baseline gap-1.5 pt-1 border-t border-border/50">

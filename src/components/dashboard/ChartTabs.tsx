@@ -6,8 +6,10 @@ import { Card } from '@/components/ui/card';
 import DepletionRateChart from '@/components/charts/DepletionRateChart';
 import SpikeCountChart from '@/components/charts/SpikeCountChart';
 import WindowTimelineChart from '@/components/charts/WindowTimelineChart';
+import WindowDataControls from './WindowDataControls';
 import { useCampaigns } from '@/lib/hooks/useCampaigns';
 import { useWindowData } from '@/lib/hooks/useWindowData';
+import { useWindows } from '@/lib/contexts/WindowContext';
 import type { DailyMetrics } from '@/lib/analytics/calculators';
 import type { BurstProtectionRow } from '@/lib/db/types';
 
@@ -33,6 +35,16 @@ export default function ChartTabs({
   filters = {},
 }: ChartTabsProps) {
   const featureDate = rawData.length > 0 ? rawData[0].feature_date : null;
+
+  const {
+    csvState,
+    databaseState,
+    activeSource,
+    uploadCSV,
+    switchSource,
+    clearCSV,
+    canToggle,
+  } = useWindows();
 
   const { data: campaignsResponse } = useCampaigns({
     advertiserId: filters.advertiserId ?? null,
@@ -99,12 +111,29 @@ export default function ChartTabs({
 
       <TabsContent value="windows" className="animate-fade-in">
         <Card className="p-6 transition-shadow duration-300 hover:shadow-md">
-          <h3 className="text-lg font-semibold mb-4">Usage Windows Timeline</h3>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h3 className="text-lg font-semibold">Usage Windows Timeline</h3>
+            <WindowDataControls
+              csvState={csvState}
+              databaseState={databaseState}
+              activeSource={activeSource}
+              onUploadCSV={uploadCSV}
+              onSwitchSource={switchSource}
+              onClearCSV={clearCSV}
+              canToggle={canToggle}
+            />
+          </div>
           {hasData ? (
             <WindowTimelineChart data={campaignWindows} />
           ) : (
             <div className="text-center py-12 text-muted-foreground">
-              Upload a windows CSV file to view window analysis
+              {databaseState.status === 'loading' ? (
+                'Loading usage windows from database...'
+              ) : databaseState.status === 'error' ? (
+                'Failed to load usage windows. Please try again or upload a CSV file.'
+              ) : (
+                'No usage windows data available. Upload a CSV file or select filters to load data from the database.'
+              )}
             </div>
           )}
         </Card>

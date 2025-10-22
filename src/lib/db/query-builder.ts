@@ -43,5 +43,7 @@ export function buildDateRangeCondition(
     return '';
   }
 
-  return `${column} BETWEEN ${escapeValue(startDate)} AND ${escapeValue(endDate)}`;
+  // To make the end date inclusive of the entire day, we add one day and use < instead of <=
+  // This ensures that '2025-10-24' includes all of 2025-10-24 23:59:59.999
+  return `${column} >= ${escapeValue(startDate)} AND ${column} < (${escapeValue(endDate)}::date + interval '1 day')`;
 }

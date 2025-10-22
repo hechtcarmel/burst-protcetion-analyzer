@@ -31,8 +31,12 @@ export function aggregateWindowsByDay(windows: WindowRow[]): WindowMetrics[] {
   const dailyMap = new Map<string, { date: Date; intervals: TimeInterval[]; campaigns: Set<number>; windowCount: number }>();
 
   windows.forEach(window => {
-    const start = startOfDay(window.start_time);
-    const end = startOfDay(window.end_time);
+    // Ensure dates are Date objects
+    const startTime = window.start_time instanceof Date ? window.start_time : new Date(window.start_time);
+    const endTime = window.end_time instanceof Date ? window.end_time : new Date(window.end_time);
+
+    const start = startOfDay(startTime);
+    const end = startOfDay(endTime);
 
     let current = new Date(start);
     while (current <= end) {
@@ -55,8 +59,8 @@ export function aggregateWindowsByDay(windows: WindowRow[]): WindowMetrics[] {
       const dayEnd = new Date(current);
       dayEnd.setDate(dayEnd.getDate() + 1);
 
-      const overlapStart = window.start_time > dayStart ? window.start_time : dayStart;
-      const overlapEnd = window.end_time < dayEnd ? window.end_time : dayEnd;
+      const overlapStart = startTime > dayStart ? startTime : dayStart;
+      const overlapEnd = endTime < dayEnd ? endTime : dayEnd;
 
       metrics.intervals.push({
         start: overlapStart.getTime(),
@@ -103,10 +107,17 @@ export function aggregateWindowsByCampaign(
       const campaign = campaigns?.find(c => c.id === campaignId);
       const totalDuration = windows.reduce((sum, w) => sum + w.window_duration_minutes, 0);
 
+      // Sort windows by start time, ensuring dates are Date objects
+      const sortedWindows = windows.sort((a, b) => {
+        const aStartTime = a.start_time instanceof Date ? a.start_time : new Date(a.start_time);
+        const bStartTime = b.start_time instanceof Date ? b.start_time : new Date(b.start_time);
+        return aStartTime.getTime() - bStartTime.getTime();
+      });
+
       return {
         campaign_id: campaignId,
         campaign_name: campaign?.name,
-        windows: windows.sort((a, b) => a.start_time.getTime() - b.start_time.getTime()),
+        windows: sortedWindows,
         totalWindows: windows.length,
         totalDuration,
       };
@@ -123,11 +134,20 @@ export function filterWindows(
   }
 ): WindowRow[] {
   return windows.filter(window => {
-    if (filters.startDate && window.end_time < filters.startDate) {
+    // Ensure dates are Date objects
+    const startTime = window.start_time instanceof Date ? window.start_time : new Date(window.start_time);
+    const endTime = window.end_time instanceof Date ? window.end_time : new Date(window.end_time);
+
+    if (filters.startDate && endTime < filters.startDate) {
       return false;
     }
-    if (filters.endDate && window.start_time > filters.endDate) {
-      return false;
+    if (filters.endDate) {
+      // Make endDate inclusive of the entire day by setting to end of day
+      const endOfDay = new Date(filters.endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      if (startTime > endOfDay) {
+        return false;
+      }
     }
 
     if (filters.campaignIds && filters.campaignIds.length > 0) {
