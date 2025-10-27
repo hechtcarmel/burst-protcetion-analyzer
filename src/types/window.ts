@@ -17,7 +17,6 @@ export interface CSVWindowRow extends BaseWindowRow {
 export interface DatabaseWindowRow extends BaseWindowRow {
   source: 'database';
   syndicator_id: number;
-  data_timestamp: Date;
 }
 
 // Discriminated union for window rows

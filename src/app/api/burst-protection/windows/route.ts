@@ -57,7 +57,6 @@ export async function GET(request: NextRequest) {
       avg_current_period_spend: row.avg_current_period_spend,
       window_duration_minutes: row.window_duration_minutes,
       syndicator_id: row.syndicator_id,
-      data_timestamp: row.data_timestamp,
     }));
 
     // Count unique campaigns

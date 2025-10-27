@@ -67,7 +67,6 @@ export const VerticaWindowRowSchema = z.object({
   end_time: z.coerce.date(),
   avg_expected_hourly_spend: z.number().nullable(),
   avg_current_period_spend: z.number().nullable(),
-  data_timestamp: z.coerce.date(),
 });
 
 export const VerticaWindowDataSchema = z.array(VerticaWindowRowSchema);

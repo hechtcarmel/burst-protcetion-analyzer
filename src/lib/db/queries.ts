@@ -303,7 +303,6 @@ export async function getBlockingWindows(filters?: {
   end_time: Date;
   avg_expected_hourly_spend: number | null;
   avg_current_period_spend: number | null;
-  data_timestamp: Date;
   window_duration_minutes: number;
 }>> {
   const startTime = Date.now();
@@ -328,9 +327,8 @@ export async function getBlockingWindows(filters?: {
       start_time,
       end_time,
       avg_expected_hourly_spend,
-      avg_current_period_spend,
-      data_timestamp
-    FROM rawdata.spending_burst_protection_hourly_blocking_windows
+      avg_current_period_spend
+    FROM reports_internal.spending_burst_protection_blocking_windows
     WHERE 1=1
       ${advertiserCondition}
       ${campaignCondition}
@@ -353,7 +351,6 @@ export async function getBlockingWindows(filters?: {
     end_time: string | Date;
     avg_expected_hourly_spend: number | string | null;
     avg_current_period_spend: number | string | null;
-    data_timestamp: string | Date;
   }>(query);
 
   const queryTime = Date.now() - startTime;
@@ -373,7 +370,6 @@ export async function getBlockingWindows(filters?: {
       end_time: endTime,
       avg_expected_hourly_spend: row.avg_expected_hourly_spend !== null ? Number(row.avg_expected_hourly_spend) : null,
       avg_current_period_spend: row.avg_current_period_spend !== null ? Number(row.avg_current_period_spend) : null,
-      data_timestamp: new Date(row.data_timestamp),
       window_duration_minutes,
     };
   });
